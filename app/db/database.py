@@ -1,11 +1,18 @@
-from fastapi import Depends
-from sqlalchemy.orm import Session
-from app.db.models import SessionLocal
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from app.config import DATABASE_URL
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+engine = create_async_engine(DATABASE_URL, echo=True)
+
+
+AsyncSessionLocal = sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False
+)
+
+
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        yield session

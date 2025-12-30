@@ -1,10 +1,10 @@
 import httpx
 from bs4 import BeautifulSoup
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.crud import create_currency, get_currency
 
 
-async def get_currency_data(db: Session):
+async def get_currency_data(db: AsyncSession):
     url = "https://www.cbr.ru/currency_base/daily/"
 
     async with httpx.AsyncClient() as client:
@@ -22,12 +22,12 @@ async def get_currency_data(db: Session):
             currency = columns[3].text.strip()
             rate = float(columns[4].text.replace(',', '.').strip())
 
-            existing_currency = get_currency(db, code)
+            existing_currency = await get_currency(db, code)
             if existing_currency:
                 existing_currency.rate = rate
-                db.commit()
-                db.refresh(existing_currency)
+                await db.commit()
+                await db.refresh(existing_currency)
             else:
-                create_currency(db, code, currency, rate)
+                await create_currency(db, code, currency, rate)
 
         return {"message": "Currency data has been updated."}
